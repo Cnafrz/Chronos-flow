@@ -1,0 +1,85 @@
+import { forwardRef, memo } from "react";
+import { motion } from "framer-motion";
+import { Check, Clock, X, GripVertical, Timer, Target } from "lucide-react";
+import CategoryBadge from "@/components/CategoryBadge";
+import { formatDuration } from "@/lib/categories";
+
+const ChecklistRow = memo(forwardRef(function ChecklistRow(
+  { item, draggableProps, dragHandleProps, onToggle, onPin, onRemove },
+  ref
+) {
+  return (
+    <motion.div
+      ref={ref}
+      layout
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      {...draggableProps}
+      className={`group flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors ${
+        item.pinned ? "ring-1 ring-indigo-300 dark:ring-indigo-800" : ""
+      } ${item.completed ? "opacity-55" : "hover:border-foreground/20"}`}
+    >
+      <span
+        {...dragHandleProps}
+        className="cursor-grab text-muted-foreground/30 hover:text-muted-foreground touch-none"
+      >
+        <GripVertical className="w-4 h-4" />
+      </span>
+      <button
+        onClick={() => onToggle(item.id)}
+        className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+          item.completed ? "bg-indigo-500 border-indigo-500" : "border-border hover:border-indigo-400"
+        }`}
+      >
+        {item.completed && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+      </button>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className={`text-sm truncate ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+          {item.title}
+        </span>
+        <CategoryBadge category={item.category} />
+      </div>
+      {item.startTime && (
+        <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+          <Clock className="w-3 h-3" />
+          {fmt(item.startTime)}{item.endTime ? `–${fmt(item.endTime)}` : ""}
+        </span>
+      )}
+      {item.duration && (
+        <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+          <Timer className="w-3 h-3" />
+          {formatDuration(item.duration)}
+        </span>
+      )}
+      <button
+        onClick={() => onPin(item.id)}
+        className={`p-1 rounded transition-colors ${
+          item.pinned
+            ? "text-indigo-500"
+            : "text-muted-foreground/30 hover:text-foreground opacity-0 group-hover:opacity-100"
+        }`}
+        aria-label={item.pinned ? "Remove from Today's Focus" : "Add to Today's Focus"}
+      >
+        <Target className="w-3.5 h-3.5" fill={item.pinned ? "currentColor" : "none"} />
+      </button>
+      {(item.source === "flexible" || (item.type === "instance" && !item.weeklyTaskId && !item.id.startsWith("calendar-"))) && (
+        <button
+          onClick={() => onRemove(item.id)}
+          className="p-1 rounded text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+          aria-label="Remove task"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </motion.div>
+  );
+}));
+
+function fmt(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":");
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export default ChecklistRow;

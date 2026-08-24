@@ -1,0 +1,25 @@
+appId: com.chronosflow.app
+productName: ChronosFlow
+directories:
+  output: releases
+  buildResources: icons
+files:
+  - dist/**/*
+  - electron/**/*
+  - icons/icon.png
+asar: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: icons/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ChronosFlow
+publish:
+  provider: generic
+  url: https://example.com/updates/

@@ -1,0 +1,64 @@
+# === Environment Variables ===
+.env
+.env.*
+*.local
+
+# === Dependencies ===
+node_modules/
+
+# === Build Outputs ===
+dist/
+dist-ssr/
+build/
+dist_electron/
+.vite/
+
+# === Electron Builder Releases ===
+releases/
+
+# === Binary Installers & Packages ===
+*.apk
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.blockmap
+*.zip
+
+# === Android Build Artifacts ===
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+
+# === iOS Build Artifacts ===
+ios/App/build/
+
+# === Base44 ===
+base44/.app.jsonc
+
+# === Logs ===
+/logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# === OS & Editor ===
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
