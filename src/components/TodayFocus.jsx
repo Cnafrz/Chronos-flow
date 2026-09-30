@@ -17,9 +17,9 @@ export default function TodayFocus({ items, onToggle }) {
   };
 
   return (
-    <section className="mb-6">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
-        <Target className="w-3.5 h-3.5" /> Today's Focus
+    <section className="mb-8 p-4 sm:p-5 rounded-2xl border-2 border-indigo-500/20 bg-gradient-to-br from-indigo-500/5 to-transparent">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-indigo-400 mb-4 px-1">
+        <Target className="w-4 h-4" /> Today's Focus
       </h2>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="focus" direction="horizontal">

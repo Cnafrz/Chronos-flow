@@ -20,31 +20,7 @@ function todayWeekday() {
   return WEEKDAYS[new Date().getDay()];
 }
 
-function weeklyInstancesForToday(tasks, ownerId) {
-  const date = todayKey();
-  const existingTemplateIds = new Set(
-    tasks.filter((task) => task.type === "instance" && task.date === date && task.weeklyTaskId).map((task) => task.weeklyTaskId)
-  );
 
-  return tasks
-    .filter((task) => task.type === "weekly_recurring" && task.day_of_week === todayWeekday() && !existingTemplateIds.has(task.id))
-    .map((task) => ({
-      id: `weekly-${task.id}-${new Date().toISOString().slice(0, 10)}`,
-      owner_id: ownerId,
-      weeklyTaskId: task.id,
-      title: task.title,
-      type: "instance",
-      date,
-      category: task.category || null,
-      duration: task.duration || null,
-      startTime: task.startTime || null,
-      endTime: task.endTime || null,
-      completed: false,
-      is_focus: false,
-      order: task.order || 0,
-      visibility: "private"
-    }));
-}
 
 export const useAppStore = create((set, get) => ({
   user: null,
@@ -97,13 +73,10 @@ export const useAppStore = create((set, get) => ({
     const unsubs = [];
 
     const unsubTasks = TaskService.subscribeToTasks(uid, (tasks) => {
-      const weeklyInstances = weeklyInstancesForToday(tasks, uid);
-      const currentTasks = weeklyInstances.length ? [...tasks, ...weeklyInstances] : tasks;
-      set({ tasks: currentTasks, isLoaded: true });
-      weeklyInstances.forEach((task) => TaskService.saveTask(task));
+      set({ tasks: tasks, isLoaded: true });
       import("../services/NotificationService").then(({ NotificationService }) => {
-        const { userProfile } = get();
-        NotificationService.scheduleTaskReminders(currentTasks, 30);
+        const userTimezone = get().userProfile?.settings?.timezone;
+        NotificationService.scheduleTaskReminders(tasks, 30, userTimezone);
       });
     });
     unsubs.push(unsubTasks);
@@ -117,7 +90,6 @@ export const useAppStore = create((set, get) => ({
     ["calendarEvents", "goals", "notebooks", "notes"].forEach((collectionName) => {
       unsubs.push(TaskService.subscribeToCollection(collectionName, uid, (items) => {
         set({ [collectionName]: items });
-        if (collectionName === "calendarEvents") get().syncCalendarEventsForToday(items);
       }));
     });
     
@@ -156,6 +128,21 @@ export const useAppStore = create((set, get) => ({
     set({ _unsubs: unsubs });
   },
 
+  togglePartnerReaction: (taskId, emoji) => {
+    const { partnerTasks } = get();
+    const task = partnerTasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    // Toggle logic: if already reacted with same emoji, remove it. Otherwise add it.
+    const currentReaction = task.reaction === emoji ? null : emoji;
+    
+    // Optimistic update
+    set({ partnerTasks: partnerTasks.map(t => t.id === taskId ? { ...t, reaction: currentReaction } : t) });
+    
+    // Server update
+    TaskService.updateTask(taskId, { reaction: currentReaction });
+  },
+
   updateUserProfile: async (updates) => {
     const { user } = get();
     if (!user) return;
@@ -177,37 +164,12 @@ export const useAppStore = create((set, get) => ({
     });
   },
 
-  syncCalendarEventsForToday: (events = get().calendarEvents) => {
-    const { tasks, user } = get();
-    if (!user) return;
-    const today = dateKey();
-    const existingIds = new Set(tasks.filter((task) => task.calendarEventId && task.date === new Date().toDateString()).map((task) => task.calendarEventId));
-    const additions = events.filter((event) => dateRangeIncludes(event) && !existingIds.has(event.id)).map((event) => ({
-      id: `calendar-${event.id}-${today}`,
-      owner_id: user.uid,
-      calendarEventId: event.id,
-      title: event.title,
-      type: "instance",
-      date: new Date().toDateString(),
-      category: event.category || null,
-      startTime: event.startTime || null,
-      endTime: event.endTime || null,
-      priority: event.priority || "medium",
-      completed: false,
-      is_focus: false,
-      visibility: "private"
-    }));
-    if (additions.length) {
-      set({ tasks: [...tasks, ...additions] });
-      additions.forEach((task) => TaskService.saveTask(task));
-    }
-  },
+
 
   addCalendarEvent: (event) => {
     const item = { id: uid(), owner_id: get().user?.uid, ...event };
     set({ calendarEvents: [...get().calendarEvents, item] });
     TaskService.saveDocument("calendarEvents", item);
-    get().syncCalendarEventsForToday([...get().calendarEvents, item]);
   },
   updateCalendarEvent: (id, updates) => {
     set({ calendarEvents: get().calendarEvents.map((event) => event.id === id ? { ...event, ...updates } : event) });
@@ -293,8 +255,9 @@ export const useAppStore = create((set, get) => ({
       // Trying to add to focus. Check if there are already 3 active.
       const currentFocusCount = state.tasks.filter(t => t.is_focus && !t.completed).length;
       if (currentFocusCount >= 3) {
-        // You could dispatch a toast here, but for now we just silently reject
-        console.warn("Max 3 focus tasks allowed");
+        import("react-hot-toast").then(({ toast }) => {
+          toast.error("You can only have 3 tasks in Focus at a time.", { id: "focus-limit" });
+        });
         return;
       }
     }
@@ -334,6 +297,26 @@ export const useAppStore = create((set, get) => ({
   removeFlexibleFromToday: (taskId) => {
     set({ tasks: get().tasks.filter(t => t.id !== taskId) });
     TaskService.deleteTask(taskId);
+  },
+
+  addTaskToToday: (title) => {
+    const today = new Date().toDateString();
+    const newTask = {
+      id: uid(),
+      owner_id: get().user?.uid,
+      source: "quick_capture",
+      title: title,
+      type: "instance",
+      date: today,
+      category: null,
+      duration: null,
+      completed: false,
+      is_focus: false,
+      visibility: "private"
+    };
+
+    set({ tasks: [...get().tasks, newTask] });
+    TaskService.saveTask(newTask);
   },
 
   reorderToday: (newOrderItems) => {

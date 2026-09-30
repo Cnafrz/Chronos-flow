@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { calendarMonthLabel, calendarSystem, calendarWeekdays, dateKey, monthGrid } from "@/lib/calendar";
+import { calendarMonthLabel, calendarSystem, getWeekdayNames, dateKey, monthGrid } from "@/lib/calendar";
 
 const initialForm = (date) => ({ title: "", description: "", category: "", color: "#6366f1", startDate: dateKey(date), endDate: dateKey(date), startTime: "", endTime: "", reminderMinutes: 30, priority: "medium" });
 
@@ -16,9 +16,46 @@ export default function CalendarView() {
   const selectedEvents = calendarEvents.filter((event) => event.startDate <= selectedKey && (event.endDate || event.startDate) >= selectedKey);
   const save = (event) => { event.preventDefault(); if (!form.title.trim()) return; addCalendarEvent(form); setForm(null); };
 
+  const exportICS = () => {
+    const formatICSDate = (dateStr, timeStr) => {
+      if (!dateStr) return null;
+      const d = new Date(dateStr);
+      if (timeStr) {
+        const [hours, mins] = timeStr.split(':');
+        d.setHours(hours, mins, 0);
+      }
+      return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ChronosFlow//EN\n";
+    calendarEvents.forEach(event => {
+      const dtStart = formatICSDate(event.startDate, event.startTime);
+      const dtEnd = formatICSDate(event.endDate || event.startDate, event.endTime);
+      
+      if (!dtStart) return;
+      icsContent += "BEGIN:VEVENT\n";
+      icsContent += `UID:${event.id}@chronosflow\n`;
+      icsContent += `DTSTAMP:${formatICSDate(new Date().toISOString())}\n`;
+      icsContent += `DTSTART:${dtStart}\n`;
+      if (dtEnd) icsContent += `DTEND:${dtEnd}\n`;
+      icsContent += `SUMMARY:${event.title}\n`;
+      if (event.description) icsContent += `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}\n`;
+      icsContent += "END:VEVENT\n";
+    });
+    icsContent += "END:VCALENDAR";
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "chronosflow_calendar.ics";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return <div>
-    <div className="flex items-center justify-between mb-6"><div><h1 className="text-3xl font-semibold">Calendar</h1><p className="text-muted-foreground mt-1">Plan important one-time events.</p></div><button onClick={() => setForm(initialForm(selectedDate))} className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-sm"><Plus className="w-4 h-4" />Event</button></div>
-    <div className="rounded-2xl border bg-card overflow-hidden"><div className="flex items-center justify-between p-4 border-b"><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></button><h2 className="font-semibold">{calendarMonthLabel(month, system)}</h2><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></button></div><div className="grid grid-cols-7 border-b">{calendarWeekdays.map((day) => <div key={day} className="py-2 text-center text-xs text-muted-foreground">{system === "jalali" ? day : day.slice(0, 3)}</div>)}</div><div className="grid grid-cols-7">{days.map((day) => { const key = dateKey(day); const events = calendarEvents.filter((event) => event.startDate <= key && (event.endDate || event.startDate) >= key); return <button key={key} onClick={() => setSelectedDate(day)} className={`min-h-20 sm:min-h-24 text-left p-1.5 border-r border-b hover:bg-muted/60 ${day.getMonth() !== month.getMonth() ? "opacity-35" : ""} ${key === selectedKey ? "bg-indigo-50 dark:bg-indigo-950/30" : ""}`}><span className="text-xs font-medium">{system === "jalali" ? new Intl.DateTimeFormat("fa-IR-u-ca-persian", { day: "numeric" }).format(day) : day.getDate()}</span>{events.slice(0, 2).map((event) => <span key={event.id} className="block truncate text-[10px] mt-1 rounded px-1 text-white" style={{ backgroundColor: event.color || "#6366f1" }}>{event.title}</span>)}</button>; })}</div></div>
+    <div className="flex items-center justify-between mb-6"><div><h1 className="text-3xl font-semibold">Calendar</h1><p className="text-muted-foreground mt-1">Plan important one-time events.</p></div><div className="flex items-center gap-2"><button onClick={exportICS} className="inline-flex items-center gap-2 rounded-lg border border-border bg-transparent px-3 py-2 text-sm">Export ICS</button><button onClick={() => setForm(initialForm(selectedDate))} className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-sm"><Plus className="w-4 h-4" />Event</button></div></div>
+    <div className="rounded-2xl border bg-card overflow-hidden"><div className="flex items-center justify-between p-4 border-b"><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></button><h2 className="font-semibold">{calendarMonthLabel(month, system)}</h2><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></button></div><div className="grid grid-cols-7 border-b">{getWeekdayNames(system).map((day) => <div key={day} className="py-2 text-center text-xs text-muted-foreground">{day}</div>)}</div><div className="grid grid-cols-7">{days.map((day) => { const key = dateKey(day); const events = calendarEvents.filter((event) => event.startDate <= key && (event.endDate || event.startDate) >= key); return <button key={key} onClick={() => setSelectedDate(day)} className={`min-h-20 sm:min-h-24 text-left p-1.5 border-r border-b hover:bg-muted/60 ${day.getMonth() !== month.getMonth() ? "opacity-35" : ""} ${key === selectedKey ? "bg-indigo-50 dark:bg-indigo-950/30" : ""}`}><span className="text-xs font-medium">{system === "jalali" ? new Intl.DateTimeFormat("fa-IR-u-ca-persian", { day: "numeric" }).format(day) : day.getDate()}</span>{events.slice(0, 2).map((event) => <span key={event.id} className="block truncate text-[10px] mt-1 rounded px-1 text-white" style={{ backgroundColor: event.color || "#6366f1" }}>{event.title}</span>)}</button>; })}</div></div>
     <section className="mt-6 rounded-2xl border bg-card p-4"><h2 className="font-semibold">{selectedKey}</h2><div className="mt-3 space-y-2">{selectedEvents.length ? selectedEvents.map((event) => <div key={event.id} className="flex items-center gap-3 rounded-lg bg-muted p-3"><span className="w-2 h-8 rounded" style={{ backgroundColor: event.color }} /><div className="flex-1"><p className="font-medium text-sm">{event.title}</p><p className="text-xs text-muted-foreground">{event.startTime || "All day"} · {event.priority} priority</p></div><button onClick={() => deleteCalendarEvent(event.id)}><X className="w-4 h-4 text-destructive" /></button></div>) : <p className="text-sm text-muted-foreground">No events for this day.</p>}</div></section>
     {form && <div className="fixed inset-0 z-50 bg-black/40 p-4 overflow-y-auto"><form onSubmit={save} className="max-w-lg mx-auto my-8 rounded-2xl bg-card p-5 space-y-3"><div className="flex justify-between"><h2 className="font-semibold">New calendar event</h2><button type="button" onClick={() => setForm(null)}><X /></button></div><input required autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="w-full rounded-md border bg-transparent p-2" /><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="w-full rounded-md border bg-transparent p-2" /><div className="grid grid-cols-2 gap-3"><label className="text-sm">Start date<input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="mt-1 w-full border rounded p-2 bg-transparent" /></label><label className="text-sm">End date<input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="mt-1 w-full border rounded p-2 bg-transparent" /></label><label className="text-sm">Start time<input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="mt-1 w-full border rounded p-2 bg-transparent" /></label><label className="text-sm">End time<input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="mt-1 w-full border rounded p-2 bg-transparent" /></label></div><div className="grid grid-cols-3 gap-3"><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Category" className="border rounded p-2 bg-transparent" /><input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="h-10 w-full" /><select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="border rounded p-2 bg-transparent"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div><button className="w-full rounded-lg bg-primary py-2 text-primary-foreground">Save event</button></form></div>}
   </div>;

@@ -82,6 +82,39 @@ export default function AnalyticsView() {
           </div>
         )}
 
+        {/* WEEKLY REVIEW */}
+        {dateRange === "this-week" && (
+          <div className="rounded-2xl border border-border bg-card p-5 bg-indigo-500/10">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-indigo-400 mb-4">Weekly Review</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Best Category</p>
+                <p className="font-semibold text-lg">
+                  {data.categoryStats.length > 0 
+                    ? [...data.categoryStats].sort((a,b)=>b.completed - a.completed)[0].name 
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completion Rate</p>
+                <p className="font-semibold text-lg">
+                  {data.categoryStats.reduce((acc, c) => acc + c.total, 0) > 0 
+                    ? Math.round((data.categoryStats.reduce((acc, c) => acc + c.completed, 0) / data.categoryStats.reduce((acc, c) => acc + c.total, 0)) * 100)
+                    : 0}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Actionable Suggestion</p>
+                <p className="font-medium text-sm mt-1">
+                  {data.missedRanked.length > 0
+                    ? `Consider allocating more time for: ${data.missedRanked[0].title}`
+                    : "Great job this week! Keep up the momentum."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CATEGORY PERFORMANCE */}
           <div className="rounded-2xl border border-border bg-card p-5">
@@ -129,13 +162,17 @@ export default function AnalyticsView() {
           <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-5 overflow-hidden">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Activity Heatmap (1 Year)</h2>
             <div className="flex flex-wrap gap-1">
-               {/* Note: In a real advanced heatmap you'd use a calendar grid. For simplicity, we just show recent 60 days here if space is tight, but requested 1 yr */}
                {data.heatmapData.slice(0, 120).map((day, i) => (
                  <div 
                    key={i} 
-                   title={`${day.dateString}: ${day.count} tasks`}
-                   className={`w-3 h-3 rounded-sm ${day.count > 0 ? (day.count > 3 ? 'bg-indigo-400' : 'bg-indigo-500/50') : 'bg-muted'}`}
-                 />
+                   className={`group relative w-3 h-3 rounded-sm ${day.count > 0 ? (day.count > 3 ? 'bg-indigo-400' : 'bg-indigo-500/50') : 'bg-muted'}`}
+                 >
+                   <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10 hidden group-hover:block w-max bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-90 shadow-lg pointer-events-none">
+                     {day.dateString}
+                     <br />
+                     <span className="font-semibold">{day.count}</span> tasks completed
+                   </div>
+                 </div>
                ))}
             </div>
           </div>

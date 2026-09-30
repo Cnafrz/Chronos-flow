@@ -39,7 +39,6 @@ export class MigrationService {
               type: "weekly_recurring",
               day_of_week: day,
               visibility: "private",
-              created_at: new Date(),
               created_at: serverTimestamp(),
               updated_at: serverTimestamp()
             });

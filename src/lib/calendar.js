@@ -64,4 +64,33 @@ export function monthGrid(value = new Date()) {
   });
 }
 
-export const calendarWeekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+// Jalali week starts on Saturday; order matches the calendar grid starting from Saturday.
+const JALALI_WEEKDAYS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+// Gregorian week starts on Saturday to match the same grid layout used throughout the app.
+const GREGORIAN_WEEKDAYS_SHORT = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+
+/**
+ * Returns the ordered array of 7 weekday header names for the calendar grid,
+ * matching the active calendar system. Grid always starts Saturday.
+ */
+export function getWeekdayNames(system = "jalali") {
+  return system === "jalali" ? JALALI_WEEKDAYS : GREGORIAN_WEEKDAYS_SHORT;
+}
+
+/**
+ * Returns the display label for today's weekday in the correct locale.
+ * Used on the Home/Daily page heading.
+ * @param {Date} date
+ * @param {"jalali"|"gregorian"} system
+ */
+export function getWeekdayLabel(date = new Date(), system = "jalali") {
+  if (system === "jalali") {
+    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", { weekday: "long" }).format(date);
+  }
+  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+}
+
+// Keep legacy export so any future external code doesn't hard-crash; points to Jalali default.
+/** @deprecated Use getWeekdayNames(system) instead */
+export const calendarWeekdays = JALALI_WEEKDAYS;
+

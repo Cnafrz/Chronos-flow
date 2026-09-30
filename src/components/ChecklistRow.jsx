@@ -1,5 +1,5 @@
 import { forwardRef, memo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Clock, X, GripVertical, Timer, Target } from "lucide-react";
 import CategoryBadge from "@/components/CategoryBadge";
 import { formatDuration } from "@/lib/categories";
@@ -28,11 +28,32 @@ const ChecklistRow = memo(forwardRef(function ChecklistRow(
       </span>
       <button
         onClick={() => onToggle(item.id)}
-        className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+        className={`relative shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${
           item.completed ? "bg-indigo-500 border-indigo-500" : "border-border hover:border-indigo-400"
         }`}
       >
-        {item.completed && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+        <AnimatePresence>
+          {item.completed && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {item.completed && (
+            <motion.div
+              className="absolute inset-0 rounded-md border border-indigo-500"
+              initial={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 2.5, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
       </button>
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <span className={`text-sm truncate ${item.completed ? "line-through text-muted-foreground" : ""}`}>

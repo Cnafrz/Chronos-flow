@@ -7,8 +7,8 @@ android {
         applicationId "com.chronosflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "2.0.0"
+        versionCode 8
+        versionName "2.1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,13 +16,63 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    // ── Release Signing Config ─────────────────────────────────────────────────
+    // Signing credentials are supplied via environment variables so the keystore
+    // file never lives in source control.
+    //
+    // Required env vars (set in your CI or local shell before building):
+    //   CHRONOSFLOW_KEYSTORE_PATH  – absolute path to the .jks / .keystore file
+    //   CHRONOSFLOW_KEYSTORE_PASS  – keystore password
+    //   CHRONOSFLOW_KEY_ALIAS      – key alias inside the keystore
+    //   CHRONOSFLOW_KEY_PASS       – key password
+    //
+    // To generate a keystore (run once, keep the file safe):
+    //   keytool -genkey -v -keystore chronosflow.jks -alias chronosflow \
+    //     -keyalg RSA -keysize 2048 -validity 10000
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv("CHRONOSFLOW_KEYSTORE_PATH")
+            def keystorePass = System.getenv("CHRONOSFLOW_KEYSTORE_PASS")
+            def keyAlias     = System.getenv("CHRONOSFLOW_KEY_ALIAS")
+            def keyPass      = System.getenv("CHRONOSFLOW_KEY_PASS")
+
+            if (keystorePath != null && new File(keystorePath).exists()) {
+                storeFile     file(keystorePath)
+                storePassword keystorePass
+                keyAlias      keyAlias
+                keyPassword   keyPass
+            } else {
+                // No keystore env vars set — release build will be unsigned.
+                // This is safe for local testing; DO NOT distribute unsigned APKs.
+                logger.warn("⚠️  CHRONOSFLOW_KEYSTORE_PATH not set or file not found. Release APK will be UNSIGNED.")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Use signing config if env vars are provided
+            def keystorePath = System.getenv("CHRONOSFLOW_KEYSTORE_PATH")
+            if (keystorePath != null && new File(keystorePath).exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+
+    // ── Versioned APK output filename ─────────────────────────────────────────
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def vName = variant.versionName
+            outputFileName = "ChronosFlow-${vName}.apk"
         }
     }
 }
+
 
 repositories {
     flatDir{

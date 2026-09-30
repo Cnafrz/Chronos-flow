@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { useTheme } from "@/hooks/useTheme";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, Trash2, GripVertical, Tag } from "lucide-react";
+import { Moon, Sun, Monitor, Plus, Trash2, GripVertical, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const PRESET_COLORS = [
@@ -12,6 +13,7 @@ const PRESET_COLORS = [
 
 export default function SettingsView() {
   const { userProfile, updateUserSettings, categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useAppStore();
+  const { theme, setTheme } = useTheme();
   const settings = userProfile?.settings || {};
 
   const [newName, setNewName] = useState("");
@@ -49,6 +51,34 @@ export default function SettingsView() {
       <p className="text-muted-foreground mt-1 mb-6">
         Preferences that apply across all devices.
       </p>
+
+      {/* ── Appearance ── */}
+      <section className="rounded-2xl border bg-card p-5 mb-6">
+        <label className="block font-medium">Appearance</label>
+        <p className="text-sm text-muted-foreground mt-1 mb-4">
+          Choose your preferred colour scheme. "System" follows your device setting.
+        </p>
+        <div className="flex gap-2">
+          {[
+            { value: "light", label: "Light", Icon: Sun },
+            { value: "dark",  label: "Dark",  Icon: Moon },
+            { value: "system", label: "System", Icon: Monitor },
+          ].map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={`flex flex-1 flex-col items-center gap-2 rounded-xl border-2 py-3 text-sm font-medium transition-colors ${
+                theme === value
+                  ? "border-primary bg-primary/5 text-foreground"
+                  : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* ── Calendar System ── */}
       <section className="rounded-2xl border bg-card p-5 mb-6">

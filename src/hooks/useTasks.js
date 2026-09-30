@@ -1,5 +1,6 @@
 import { useAppStore } from "../store/useAppStore";
 import { useEffect, useMemo } from "react";
+import { dateRangeIncludes } from "../lib/calendar";
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 function todayKey() { return new Date().toDateString(); }
@@ -39,11 +40,29 @@ export function useTasks() {
     for (const day of WEEKDAYS) {
       d.weeklySchedule[day].sort((a, b) => (a.order || 0) - (b.order || 0));
     }
+    
+    // Inject Calendar Events for today
+    if (store.calendarEvents) {
+      store.calendarEvents.forEach(event => {
+        if (dateRangeIncludes(event)) {
+          d.dailyChecklist.items.push({
+            ...event,
+            id: `calendar-${event.id}-${todayKey()}`,
+            type: "calendar_event",
+            completed: false, // Calendar events aren't typically checked off, but we can allow it in UI if needed
+            is_focus: false,
+            pinned: false,
+            source: "calendar"
+          });
+        }
+      });
+    }
+
     d.dailyChecklist.items.sort((a, b) => (a.order || 0) - (b.order || 0));
     d.flexibleTemplates.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     return d;
-  }, [store.tasks, store.templates, store.user]);
+  }, [store.tasks, store.templates, store.user, store.calendarEvents]);
 
   const streak = useMemo(() => {
     let s = 0;

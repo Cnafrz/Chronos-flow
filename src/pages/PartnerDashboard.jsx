@@ -188,6 +188,17 @@ export default function PartnerDashboard() {
                 </span>
                 <span className={`flex-1 text-sm ${task.completed ? "line-through text-muted-foreground" : "font-medium"}`}>{task.title}</span>
                 {task.startTime && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-3 h-3" />{task.startTime}</span>}
+                <div className="flex items-center gap-1 ml-2 border-l pl-3">
+                  {['🔥', '👏', '💪'].map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={() => useAppStore.getState().togglePartnerReaction(task.id, emoji)}
+                      className={`text-lg px-1 py-0.5 rounded transition-transform hover:scale-125 ${task.reaction === emoji ? "bg-muted" : "opacity-50 hover:opacity-100"}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

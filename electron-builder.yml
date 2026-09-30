@@ -1,18 +1,22 @@
 appId: com.chronosflow.app
 productName: ChronosFlow
 directories:
-  output: releases
+  output: C:\BuildOut\chronosflow
   buildResources: icons
 files:
   - dist/**/*
   - electron/**/*
   - icons/icon.png
 asar: true
+
 win:
   target:
     - target: nsis
       arch: [x64]
   icon: icons/icon.png
+  # Versioned installer filename: e.g. "ChronosFlow 2.0.1.exe"
+  artifactName: "${productName} ${version}.${ext}"
+
 nsis:
   oneClick: false
   perMachine: false
@@ -20,6 +24,28 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: ChronosFlow
+  # Delete existing app files before installing (prevents "file in use" errors
+  # and stale file accumulation from previous versions).
+  deleteAppDataOnUninstall: false
+  # ── Update-aware NSIS behaviour ──────────────────────────────────────────────
+  # Include our custom script that:
+  #  1. Detects an existing installation via the registry uninstall key.
+  #  2. If found: retitles the window to "Update ChronosFlow" and the main
+  #     button to "Update", installs over the existing directory silently
+  #     without creating duplicate shortcuts or orphaned Start Menu entries.
+  #  3. Force-closes a running ChronosFlow.exe before installing so no
+  #     "file in use" errors occur.
+  include: build/installer.nsh
+
+mac:
+  target: dmg
+  icon: icons/icon.png
+  artifactName: "${productName} ${version}.${ext}"
+
+linux:
+  target: AppImage
+  artifactName: "${productName} ${version}.${ext}"
+
 publish:
   provider: generic
   url: https://example.com/updates/

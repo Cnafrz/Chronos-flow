@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, Tray, Menu } = require("electron");
+const { app, BrowserWindow, shell, Tray, Menu, ipcMain, Notification } = require("electron");
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -102,6 +102,29 @@ function setupAutoUpdater() {
     /* ignore */
   }
 }
+
+// ── Desktop Notification IPC ──────────────────────────────────────────────────
+// Renderer calls window.electronApp.showNotification(title, body, route)
+// Main process shows an OS-native notification; clicking focuses the window
+// and posts a NAVIGATE message to the renderer for deep-linking.
+ipcMain.on("show-notification", (_event, { title, body, route }) => {
+  if (!Notification.isSupported()) return;
+  const notif = new Notification({
+    title: title || "ChronosFlow",
+    body: body || "",
+    icon: require("path").join(__dirname, "..", "icons", "icon.png"),
+    silent: false,
+  });
+  notif.on("click", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+      if (route) mainWindow.webContents.send("navigate", route);
+    }
+  });
+  notif.show();
+});
 
 app.whenReady().then(() => {
   createWindow();

@@ -22,13 +22,32 @@ import ForgotPassword from "./pages/ForgotPassword";
 const AuthenticatedApp = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
 
-  // Show loading spinner while checking auth
   if (isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground">Loading ChronosFlow...</p>
+      <div className="flex h-screen w-full bg-background overflow-hidden">
+        {/* Sidebar Skeleton */}
+        <div className="hidden md:flex flex-col w-64 border-r border-border bg-card/30 p-4 gap-4 shrink-0">
+          <div className="h-8 w-32 bg-muted animate-pulse rounded-md mb-8" />
+          <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+          <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+          <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+          <div className="h-10 w-full bg-muted animate-pulse rounded-md mt-auto" />
+        </div>
+        {/* Main Content Skeleton */}
+        <div className="flex-1 p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
+          <div className="flex justify-between items-center mb-4 mt-12 md:mt-0">
+            <div>
+              <div className="h-10 w-48 bg-muted animate-pulse rounded-md mb-2" />
+              <div className="h-4 w-32 bg-muted animate-pulse rounded-md" />
+            </div>
+            <div className="hidden sm:block h-10 w-24 bg-muted animate-pulse rounded-lg" />
+          </div>
+          <div className="h-32 w-full bg-muted animate-pulse rounded-2xl shrink-0" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0">
+            <div className="h-full w-full bg-muted animate-pulse rounded-xl" />
+            <div className="h-full w-full bg-muted animate-pulse rounded-xl hidden md:block" />
+            <div className="h-full w-full bg-muted animate-pulse rounded-xl hidden md:block" />
+          </div>
         </div>
       </div>
     );

@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(ownerId) { return request.auth.uid == ownerId; }
+    function isPartner(ownerId) { return get(/databases/$(database)/documents/users/$(ownerId)).data.partner_id == request.auth.uid; }
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated() && resource.data.partner_id == request.auth.uid;
+    }
+    match /tasks/{taskId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+      allow read: if isAuthenticated() && isPartner(resource.data.owner_id);
+    }
+    match /templates/{templateId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+      allow read: if isAuthenticated() && isPartner(resource.data.owner_id);
+    }
+    match /categories/{categoryId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+    }
+    match /calendarEvents/{eventId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+    }
+    match /goals/{goalId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+    }
+    match /notebooks/{notebookId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+    }
+    match /notes/{noteId} {
+      allow create: if isAuthenticated() && request.resource.data.owner_id == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.owner_id);
+    }
+    match /partner_invites/{code} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.sender_id == request.auth.uid;
+      allow update: if isAuthenticated() && request.resource.data.sender_id == resource.data.sender_id;
+      allow delete: if isAuthenticated() && (isOwner(resource.data.sender_id) || isOwner(resource.data.accepted_by));
+    }
+  }
+}
