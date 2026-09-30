@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence, serverTimestamp } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAQGGwJkfMIcNyKRjPrRbQVFu8xdUVeHJM",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "chronosflow-8259c.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "chronosflow-8259c",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "chronosflow-8259c.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "237575433402",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:237575433402:web:37079be7313d2ce5172683",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-7KTDWR5H42"
 };
 
 // Initialize Firebase
