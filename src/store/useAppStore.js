@@ -52,6 +52,41 @@ export const useAppStore = create((set, get) => ({
     });
   },
 
+  hydrateTodayInstances: () => {
+    const state = get();
+    if (!state.tasks || !state.user) return;
+    const today = todayKey();
+    const todayDow = todayWeekday();
+    
+    const weeklyTasksToday = state.tasks.filter(t => t.type === "weekly_recurring" && t.day_of_week === todayDow);
+    const existingInstances = new Set(state.tasks.filter(t => t.type === "instance" && t.date === today && t.weeklyTaskId).map(t => t.weeklyTaskId));
+    
+    const missing = weeklyTasksToday.filter(t => !existingInstances.has(t.id));
+    if (missing.length > 0) {
+      const newInstances = missing.map(t => {
+        const instanceId = `${t.id}_${today.replace(/\s+/g, '_')}`;
+        return {
+          id: instanceId,
+          owner_id: t.owner_id,
+          title: t.title,
+          type: "instance",
+          date: today,
+          category: t.category || null,
+          duration: t.duration || null,
+          startTime: t.startTime || null,
+          endTime: t.endTime || null,
+          completed: false,
+          is_focus: false,
+          order: t.order || 0,
+          visibility: t.visibility || "private",
+          weeklyTaskId: t.id
+        };
+      });
+      // Save directly to Firebase; the subscription will pick it up instantly
+      newInstances.forEach(inst => TaskService.saveTask(inst));
+    }
+  },
+
   unsubscribeData: () => {
     get().unsubscribePartnerData();
     const unsubs = get()._unsubs;
@@ -74,6 +109,7 @@ export const useAppStore = create((set, get) => ({
 
     const unsubTasks = TaskService.subscribeToTasks(uid, (tasks) => {
       set({ tasks: tasks, isLoaded: true });
+      get().hydrateTodayInstances();
       import("../services/NotificationService").then(({ NotificationService }) => {
         const userTimezone = get().userProfile?.settings?.timezone;
         NotificationService.scheduleTaskReminders(tasks, 30, userTimezone);
