@@ -74,23 +74,31 @@ const ChecklistRow = memo(forwardRef(function ChecklistRow(
         </span>
       )}
       <button
-        onClick={() => onPin(item.id)}
-        className={`p-1 rounded transition-colors ${
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onPin(item.id);
+        }}
+        className={`p-1.5 rounded-lg transition-colors touch-manipulation cursor-pointer ${
           item.pinned
             ? "text-indigo-500"
-            : "text-muted-foreground/30 hover:text-foreground opacity-0 group-hover:opacity-100"
+            : "text-muted-foreground/40 hover:text-foreground opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         }`}
         aria-label={item.pinned ? "Remove from Today's Focus" : "Add to Today's Focus"}
       >
-        <Target className="w-3.5 h-3.5" fill={item.pinned ? "currentColor" : "none"} />
+        <Target className="w-4 h-4" fill={item.pinned ? "currentColor" : "none"} />
       </button>
-      {(item.source === "flexible" || (item.type === "instance" && !item.weeklyTaskId && !item.id.startsWith("calendar-"))) && (
+      {(item.source === "quick_capture" || item.source === "flexible" || (item.type === "instance" && !item.weeklyTaskId && !String(item.id).startsWith("calendar-"))) && (
         <button
-          onClick={() => onRemove(item.id)}
-          className="p-1 rounded text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(item.id);
+          }}
+          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation cursor-pointer"
           aria-label="Remove task"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       )}
     </motion.div>

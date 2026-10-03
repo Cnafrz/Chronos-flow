@@ -1,3 +1,5 @@
+import { toJalaali, toGregorian } from "jalaali-js";
+
 const PERSIAN_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
 const PERSIAN_WEEKDAYS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
 
@@ -38,29 +40,89 @@ export function formatCalendarDate(value, system = "jalali", options = {}) {
 
 export function calendarMonthLabel(value, system = "jalali") {
   const date = toDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
   if (system !== "jalali") return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(date);
-  const parts = new Intl.DateTimeFormat("fa-IR-u-ca-persian", { month: "numeric", year: "numeric" }).formatToParts(date);
-  const month = Number(parts.find((part) => part.type === "month")?.value?.replace(/[^0-9۰-۹]/g, "").replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit)) || 1);
-  const year = parts.find((part) => part.type === "year")?.value || "";
-  return `${PERSIAN_MONTHS[month - 1]} ${year}`;
+  const { jy, jm } = toJalaali(date);
+  return `${PERSIAN_MONTHS[jm - 1]} ${jy}`;
 }
 
 export function weekdayLabel(value, system = "jalali") {
   const date = toDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "";
   if (system !== "jalali") return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
   const index = (date.getDay() + 1) % 7;
   return PERSIAN_WEEKDAYS[index];
 }
 
-export function monthGrid(value = new Date()) {
-  const first = new Date(value.getFullYear(), value.getMonth(), 1);
+export function prevMonth(value = new Date(), system = "jalali") {
+  const date = toDate(value) || new Date();
+  if (system === "jalali") {
+    const { jy, jm } = toJalaali(date);
+    const prevJy = jm === 1 ? jy - 1 : jy;
+    const prevJm = jm === 1 ? 12 : jm - 1;
+    const { gy, gm, gd } = toGregorian(prevJy, prevJm, 1);
+    return new Date(gy, gm - 1, gd, 12, 0, 0);
+  }
+  return new Date(date.getFullYear(), date.getMonth() - 1, 1, 12, 0, 0);
+}
+
+export function nextMonth(value = new Date(), system = "jalali") {
+  const date = toDate(value) || new Date();
+  if (system === "jalali") {
+    const { jy, jm } = toJalaali(date);
+    const nextJy = jm === 12 ? jy + 1 : jy;
+    const nextJm = jm === 12 ? 1 : jm + 1;
+    const { gy, gm, gd } = toGregorian(nextJy, nextJm, 1);
+    return new Date(gy, gm - 1, gd, 12, 0, 0);
+  }
+  return new Date(date.getFullYear(), date.getMonth() + 1, 1, 12, 0, 0);
+}
+
+export function isSameMonth(dateA, dateB, system = "jalali") {
+  const a = toDate(dateA);
+  const b = toDate(dateB);
+  if (!a || !b) return false;
+  if (system === "jalali") {
+    const ja = toJalaali(a);
+    const jb = toJalaali(b);
+    return ja.jy === jb.jy && ja.jm === jb.jm;
+  }
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+export function formatDayNumber(value, system = "jalali") {
+  const date = toDate(value);
+  if (!date) return "";
+  if (system === "jalali") {
+    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", { day: "numeric" }).format(date);
+  }
+  return String(date.getDate());
+}
+
+export function monthGrid(value = new Date(), system = "jalali") {
+  const date = toDate(value) || new Date();
+  if (system === "jalali") {
+    const { jy, jm } = toJalaali(date);
+    const { gy, gm, gd } = toGregorian(jy, jm, 1);
+    const first = new Date(gy, gm - 1, gd, 12, 0, 0);
+    // Jalali week starts on Saturday (which is getDay() === 6 -> index 0)
+    const startOffset = (first.getDay() + 1) % 7;
+    const start = new Date(first);
+    start.setDate(first.getDate() - startOffset);
+    return Array.from({ length: 42 }, (_, index) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + index);
+      return d;
+    });
+  }
+  const first = new Date(date.getFullYear(), date.getMonth(), 1, 12, 0, 0);
   const startOffset = (first.getDay() + 1) % 7;
   const start = new Date(first);
   start.setDate(first.getDate() - startOffset);
   return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return date;
+    const d = new Date(start);
+    d.setDate(start.getDate() + index);
+    return d;
   });
 }
 
